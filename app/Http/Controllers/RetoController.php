@@ -9,6 +9,10 @@ use App\models\Reto;
 use App\models\TipoJuego;
 use App\models\Registro;
 use App\models\RegistroReto;
+use App\models\Preguntas;
+use App\models\PreguntasReto;
+use App\models\Respuestas;
+use App\models\RespuestasPregunta;
 
 class RetoController extends Controller
 {
@@ -21,23 +25,16 @@ class RetoController extends Controller
             'descripcion' => 'required',
             'tema' => 'required',
             'puntos' => 'required',
-            //'feedback' => 'required',
             'tiempoSegundos' => 'required',
             'distribucion' => 'required',
             'fechaFin' => 'required',
-            //'estudiantes' =>''
         ]);
         if ($Validator->fails()) {
             return response()->json(['Error' => $Validator->errors()], 418);
         }
-
-        // $Estudiantes = str_replace('[', '', $request->estudiantes);
-        // $Estudiantes = str_replace(']', '', $Estudiantes);
-        // $Alumnos = explode(',',$Estudiantes);
-
         $Creador=Registro::find($request->idCreador);
         if (!$Creador) {
-            return response()->json(['Error' => 'No se ha podido encontrar el creador'], 418);
+            return response()->json(['Error' => 'No se ha podido encontrar al creador del reto'], 418);
         }
         $TipoReto=TipoJuego::find($request->idTipoReto);
         if (!$TipoReto) {
@@ -50,6 +47,7 @@ class RetoController extends Controller
         $InputReto['descripcion']=$request->descripcion;
         $InputReto['puntos']=$request->puntos;
         $InputReto['feedback']='N/A';
+        $InputReto['estado']='1';
         $InputReto['tiempoSegundos']=$request->tiempoSegundos;
         $InputReto['distribucion']=$request->distribucion;
         $InputReto['fecha_fin']=$request->fechaFin;
@@ -67,9 +65,70 @@ class RetoController extends Controller
 
     }
 
-    public function EliminarReto(Request $request)
+    public function ModificarReto(Request $request)
     {
-        
+        $Validator = Validator::make($request->all(), [
+            'idReto'=> 'required',
+            //'idCreador' => 'required',
+            //'idTipoReto' => 'required',
+            'descripcion' => 'required',
+            'tema' => 'required',
+            'puntos' => 'required',
+            'tiempoSegundos' => 'required',
+            'distribucion' => 'required',
+            'fechaFin' => 'required',
+        ]);
+        if ($Validator->fails()) {
+            return response()->json(['Error' => $Validator->errors()], 418);
+        }
+        $Creador=Registro::find($request->idCreador);
+        if (!$Creador) {
+            return response()->json(['Error' => 'No se ha podido encontrar al creador del reto'], 418);
+        }
+        $TipoReto=TipoJuego::find($request->idTipoReto);
+        if (!$TipoReto) {
+            return response()->json(['Error' => 'No se ha podido encontrar el tipo de reto'], 418);
+        }
+        $Reto= Reto::find($request->idReto);
+        if($Reto){ 
+            //$Reto->idCreador=$request->idCreador;
+            //$Reto->idTipoReto=$request->idTipoReto;
+            $Reto->tema=$request->tema;
+            $Reto->descripcion=$request->descripcion;
+            $Reto->puntos=$request->puntos;
+            //$Reto['feedback']='N/A';
+            //$Reto['estado']='0';
+            $Reto->tiempoSegundos=$request->tiempoSegundos;
+            $Reto->distribucion=$request->distribucion;
+            $Reto->fecha_fin=$request->fechaFin;
+            $Reto->save();
+            return response()->json(['Success' => $Reto], 200);
+        }
+        else{
+            return response()->json(['Error' => 'No se ha podido comprobar la creacion del reto'], 400);
+        }
+    }
+    ///Crear api para eliminar logicamante un reto
+    ///Para reactivar reto
+    public function CambEstdReto(Request $request)
+    {
+        $Validator = Validator::make($request->all(), [
+            'idReto' => 'required',
+            'estado'=>'required'
+        ]);
+        if ($Validator->fails()) {
+            return response()->json(['Error' => $Validator->errors()], 418);
+        }
+        $Reto= Reto::find($request->idReto);
+        if ($Reto) {
+            $Reto->estado=$request->estado;
+            //$Reto->estado="1";
+            $Reto->save();
+        }
+        else{
+            return response()->json(['Error' => 'No se pudo encontrar reto a modificar el estado'], 418);
+        }
+        return response()->json(['Success' => 'Se modificó el estado correctamente'], 200);
     }
 
     public function ListarRetos(Request $request)
@@ -92,6 +151,7 @@ class RetoController extends Controller
         if($TipoReto->idTipoRegistro==1){
         $Retos=DB::connection('appJuegos')->table('Reto')
                     ->where('Reto.distribucion', $request->distribucion)
+                    //->where('Reto.estado','0')
                     ->join('Registro','Reto.idCreador','Registro.idRegistro')
                     ->select('Reto.*',
                             //'Registro.cedula as Estudiantes'
@@ -102,7 +162,9 @@ class RetoController extends Controller
         else if($TipoReto->idTipoRegistro==2){
             $Retos=DB::connection('appJuegos')->table('Reto')
                     ->where('Reto.distribucion', $request->distribucion)
-                    ->join('Registro','Reto.idCreador','Registro.idRegistro')
+                    //->where('Reto.estado','0')
+                    ->join('RegistroReto','Reto.id','RegistroReto.idReto')
+                    ->join('Registro','RegistroReto.idRegistro','Registro.idRegistro')
                     ->select('Reto.*',
                     //'Reto.id as Estudiantes'
                 )->get();
@@ -124,38 +186,41 @@ class RetoController extends Controller
         $Estudiantes = str_replace('[', '', $request->estudiantes);
         $Estudiantes = str_replace(']', '', $Estudiantes);
         $Alumnos = explode(',',$Estudiantes);
-        $NoEncontrados='';
+        $listaAlumnos=array();
         //return response()->json(['Success' => $request->idReto], 200);
+        $Reto= Reto::find($request->idReto);
+        if(!$Reto)
+            {
+                return response()->json(['Success' => 'No se hicieron cambios, no existe el reto asignado'], 200);
+            }
+        $RegistroRetos=RegistroReto::where('idReto','=',$Reto->id)->select('id')->get();
         foreach ($Alumnos as $Alumno) {
             ////Buscar por cedula
             $Estudiante=Registro::where('cedula','=',$Alumno)->first();
             if($Estudiante){
-                $Reto= Reto::find($request->idReto);
-                if($Reto)
-                {
-                    $RegistroRetoC=RegistroReto::where('idReto','=',$Reto->id)->where('idRegistro','=',$Estudiante->idRegistro)
-                        ->first();
-                       //return response()->json(['Success' => $RegistroRetoC], 200);
-                    if(!$RegistroRetoC){
-                        $InputRegistroReto['idReto']=$request->idReto;
-                        $InputRegistroReto['idRegistro']=$Estudiante->idRegistro;
-                        RegistroReto::create($InputRegistroReto);
-                    }
-                }
-                
-
+                $RegistroRetoC=RegistroReto::where('idReto','=',$Reto->id)->where('idRegistro','=',$Estudiante->idRegistro)
+                    ->select('id')
+                    ->first();
                     
+                if(!$RegistroRetoC){
+                    $InputRegistroReto['idReto']=$request->idReto;
+                    $InputRegistroReto['idRegistro']=$Estudiante->idRegistro;
+                    $RegistroRetoC=RegistroReto::create($InputRegistroReto);
+                    //return response()->json(['Success' => $RegistroRT], 200);
+                    // $RegistroRt1->id
+                }
+                array_push($listaAlumnos,$RegistroRetoC->id);     
             }
-            // else{
-            //     $NoEncontrados=$Alumno.' '.$NoEncontrados;
-            // }
         }
-        // if (!$NoEncontrados=='') {
-        //     $mensaje['Mensaje']="No se pudieron registrar los siguientes estudiantes";
-        //     $mensaje['Estudiantes']=$NoEncontrados;
-        //     return response()->json(['Success' => $mensaje], 206);
-        // }
-        return response()->json(['Success' => 'Se han registrado todos los estudiantes correctamente'], 200);
+        foreach ($RegistroRetos as $RegRetos) {
+            $existeLista=in_array($RegRetos->id, $listaAlumnos, true); // true
+            if(!$existeLista){
+                $RegistroRt1=RegistroReto::find($RegRetos->id);
+                $RegistroRt1->delete();
+            }
+        //return response()->json(['Success' =>$listaAlumnos], 200);
+        }
+        return response()->json(['Success' => 'Se han registrado los cambios de asignacion correctamente'], 200);
     }
 
     public function QuitarAsignacion(Request $request)
@@ -170,18 +235,29 @@ class RetoController extends Controller
         $Estudiantes = str_replace('[', '', $request->estudiantes);
         $Estudiantes = str_replace(']', '', $Estudiantes);
         $Alumnos = explode(',',$Estudiantes);
+        $comprobacion="";
         foreach ($Alumnos as $Alumno) {
             ///validar para que se eliminen los asignados 
-            $Estudiante=Registro::find($Alumno);
+            $Estudiante=Registro::where('cedula','=',$Alumno)->first();
             if($Estudiante){
-                $RegistroReto=RegistroReto::where('idReto','=',$Reto->id)->where('idRegistro','=',$Estudiante->idRegistro)
-                        ->first();
-                if($RegistroReto){
-                $RegistroReto->delete();
+                $comprobacion="registro";
+                $Reto= Reto::find($request->idReto);
+                if($Reto)
+                {
+                    $comprobacion="reto";
+                    $RegistroReto=RegistroReto::where('idReto','=',$Reto->id)->
+                    where('idRegistro','=',$Estudiante->idRegistro)
+                            ->first();
+                    //return response()->json(['Success' => RegistroReto], 200);
+                    if($RegistroReto){
+                        $RegistroReto->delete();
+                        $comprobacion="registroReto";
+                    }
                 }
+                
             }
         }
-        return response()->json(['Success' => 'Se han quitado los elumnos correctamente'], 200);
+        return response()->json(['Success' => 'Se han quitado los estudiantes correctamente'], 200);   
     }
 
     public function BuscarEstudiantes(Request $request)
@@ -217,4 +293,105 @@ class RetoController extends Controller
         //ver si ese reto ya esta asignado o no y listado de estudiantes a quien fue asignado
     }
     
+    public function RegistrarPreguntasReto(Request $request)
+    {
+        $Validator = Validator::make($request->all(), [
+            'idReto' => 'required',
+            'idRegistro'=>'required',
+            'descripcion'=>'required',
+            'respuestas'=>''
+        ]);
+        if ($Validator->fails()) {
+            return response()->json(['Error' => $Validator->errors()], 418);
+        }
+        $Respuestas = str_replace('[', '', $request->respuestas);
+        $Respuestas = str_replace(']', '', $Respuestas);
+        $ListaRepuestas = explode(',',$Respuestas);
+        //$listaAlumnos=array();
+        $Registro=Registro::find($request->idRegistro);
+        if (!$Registro) {
+            return response()->json(['Error' => 'No se ha podido localizar el registro'],418);
+        }
+        if ($Registro->idTipo==1) {
+            //$InputPreguntas['idReto']=$request->idReto;
+            $InputPreguntas['idRegistro']=$request->idRegistro;
+            $InputPreguntas['descripcion']=$request->descripcion;
+            $Preguntas=Preguntas::create($InputPreguntas);
+            if($Preguntas){ 
+                $InputPreguntasReto['idPregunta']=$Preguntas->id;
+                $InputPreguntasReto['idReto']=$request->idReto;
+                $PreguntasReto=PreguntasReto::create($InputPreguntasReto);
+                if ($PreguntasReto) {
+                    foreach ($ListaRepuestas as $Respuesta){
+                        $InputRespuesta['descripcion']=$Respuesta;
+                        $ObjRespuesta=Respuestas::create($InputRespuesta);
+                        if($ObjRespuesta){
+                            $InputRespuestasPregunta['idRespuesta']=$ObjRespuesta->id;
+                            $InputRespuestasPregunta['idPregunta']=$Preguntas->id;
+                            $PreguntaRespuesta=RespuestasPregunta::create($InputRespuestasPregunta);
+                        }
+                    }
+                    // $InputRespuesta
+                    return response()->json(['Success' => 'Se ha creado la pregunta con sus respuestas correctamente'],200);
+                }
+                else{
+                    return response()->json(['Error' => 'No se pudo completar el registro'],418);
+                }
+            }
+            else{
+                return response()->json(['Error' => 'No se pudo crear la pregunta'],418);
+            }
+        }
+        else{
+            return response()->json(['Error' => 'No autorizado'],401);
+        }
+
+    }
+
+    // public function RegistrarRespuestaPregunta(Request $request)
+    // {
+        
+    // }
+
+    public function ListarPreguntas(Request $request)
+    {
+        $Validator = Validator::make($request->all(), [
+            'idReto' => 'required',
+            // 'idRegistro'=>'required',
+            // 'descripcion'=>'required'
+        ]);
+        if ($Validator->fails()) {
+            return response()->json(['Error' => $Validator->errors()], 418);
+        }
+        $PreguntasConRespuestas=DB::connection('appJuegos')->table('PreguntasReto')
+        ->where('PreguntasReto.idReto', $request->idReto)
+        ->join('Preguntas','PreguntasReto.idPregunta','Preguntas.id')
+        ->select('Preguntas.*')
+        ->get();
+
+        $PreguntasConRespuestas=$this->ObtenerRespuestas($PreguntasConRespuestas);
+
+        return response()->json(['Success' => $PreguntasConRespuestas], 200);
+
+    }
+
+
+
+    public static function ObtenerRespuestas($PreguntasConRespuestas)
+    {
+        $Tamano=sizeof($PreguntasConRespuestas);
+        //$Info=$Retos;
+        //return response()->json(['success' => $Publicaciones[$Tamano-1]], 200);
+        for ($i=0; $i < $Tamano; $i++) { 
+            $Respuestas=DB::table('RespuestasPregunta')
+            ->where('RespuestasPregunta.idPregunta', $PreguntasConRespuestas[$i]->id)
+            ->join('Respuestas','RespuestasPregunta.idRespuesta','Respuestas.id')
+            ->select('Respuestas.*')
+            ->get();
+
+            $PreguntasConRespuestas[$i]->Respuestas=$Respuestas;
+        }
+        return $PreguntasConRespuestas;
+    }
+    ////Ruta para ver cuantas preguntas tiene un reto
 }

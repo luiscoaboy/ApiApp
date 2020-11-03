@@ -11,9 +11,9 @@ class Preguntas extends Model
     protected $connection ='appJuegos';
     protected $table='Preguntas';
     public $timestamps = false;
-    protected $primaryKey = 'Id';
+    protected $primaryKey = 'id';
     protected $fillable = [
-        'Id',
+        'id',
         'descripcion',
         'idRegistro',
         'eliminado',
