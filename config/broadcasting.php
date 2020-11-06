@@ -36,8 +36,16 @@ return [
             'secret' => env('PUSHER_APP_SECRET'),
             'app_id' => env('PUSHER_APP_ID'),
             'options' => [
-                'cluster' => env('PUSHER_APP_CLUSTER'),
-                'useTLS' => true,
+                'host'=>'192.168.0.109',//ip de servidor
+                'port'=>'8000',
+                'scheme' => 'http',
+                // 'useTLS' => false, 
+                // 'forceTLS'=>false,
+            //     'scheme' => 'http',
+            //     'curl_options' => [
+            //         CURLOPT_SSL_VERIFYHOST => 0,
+            //         CURLOPT_SSL_VERIFYPEER => 0,
+            //    ]
             ],
         ],
 

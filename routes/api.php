@@ -18,6 +18,9 @@ use App\Http\Controllers\RetoController;
 // Route::middleware('auth:api')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
+// header('Access-Control-Allow-Origin: *');
+// header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+// header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 ////Ruta para probar///No es importante
 Route::get('/listar', [PerfilIdiomasController::class, 'Listar']);
 
@@ -39,3 +42,6 @@ Route::post('/modEstdReto',[RetoController::class, 'CambEstdReto']);//Nueva ruta
 Route::post('/crearPreguntaReto',[RetoController::class, 'RegistrarPreguntasReto']);//Nueva ruta
 //Lista las preguntas asignadas a un reto
 Route::post('/listarPreguntas',[RetoController::class, 'ListarPreguntas']);
+//Lista los retos que un estudiante tiene asignado
+Route::post('/listarRetosEstd',[RetoController::class, 'ListarRetosEstudiantes']);
+// ListarRetosEstudiantes

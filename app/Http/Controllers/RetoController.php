@@ -173,6 +173,34 @@ class RetoController extends Controller
         return response()->json(['Success' => $Retos], 200);
     }
 
+    public function ListarRetosEstudiantes(Request $request)
+    {
+        $Validator = Validator::make($request->all(), [
+            'idRegistro' => 'required',
+            'idTipoReto'=>'required',
+        ]);
+        if ($Validator->fails()) {
+            return response()->json(['Error' => $Validator->errors()], 418);
+        }
+        $Registro=Registro::find($request->idRegistro);
+        if (!$Registro) {
+            return response()->json(['Error' => 'No se pudo encontrar registro'], 418);
+        }
+        $TipoReto=TipoJuego::find($request->idTipoReto);
+        if (!$TipoReto) {
+            return response()->json(['Error' => 'Error en base de datos, no se encuentra el tipo de reto'], 418);
+        }
+        $Retos=DB::connection('appJuegos')->table('RegistroReto')
+            ->where('RegistroReto.idRegistro', $request->idRegistro)
+            ->join('Reto','RegistroReto.idReto','Reto.id')
+            ->where('Reto.idTipoReto',$request->idTipoReto)
+            ->where('Reto.estado',1)   
+            ->select('Reto.*',
+                //'Reto.id as Estudiantes'
+            )->get();
+            return response()->json(['Success' => $Retos], 200);
+    }
+
     public function AsignarEstudiantesReto(Request $request)
     {
         $Validator = Validator::make($request->all(), [
