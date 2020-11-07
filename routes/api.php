@@ -44,4 +44,5 @@ Route::post('/crearPreguntaReto',[RetoController::class, 'RegistrarPreguntasReto
 Route::post('/listarPreguntas',[RetoController::class, 'ListarPreguntas']);
 //Lista los retos que un estudiante tiene asignado
 Route::post('/listarRetosEstd',[RetoController::class, 'ListarRetosEstudiantes']);
-// ListarRetosEstudiantes
+//Elimina un pregunta y sus respectivas respuestas
+Route::post('/eliminPreg',[RetoController::class, 'EliminarPregunta']);
