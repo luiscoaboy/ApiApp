@@ -76,14 +76,6 @@ class RetoController extends Controller
         if ($Validator->fails()) {
             return response()->json(['Error' => $Validator->errors()], 418);
         }
-        $Creador=Registro::find($request->idCreador);
-        if (!$Creador) {
-            return response()->json(['Error' => 'No se ha podido encontrar al creador del reto'], 418);
-        }
-        $TipoReto=TipoJuego::find($request->idTipoReto);
-        if (!$TipoReto) {
-            return response()->json(['Error' => 'No se ha podido encontrar el tipo de reto'], 418);
-        }
         $Reto= Reto::find($request->idReto);
         if($Reto){ 
             //$Reto->idCreador=$request->idCreador;
@@ -457,14 +449,24 @@ class RetoController extends Controller
                     $PreguntasReto=PreguntasReto::where('idPregunta',$Pregunta->id)->first();
                     if($PreguntasReto){
                         $PreguntasReto->idReto=$request->idReto;
-                        $PreguntasReto->save();
                         $RespuestasPregunta=RespuestasPregunta::where('idPregunta',$Pregunta->id)
                         ->join('Respuestas','RespuestasPregunta.idRespuesta','Respuestas.id')
                         ->select('RespuestasPregunta.*')->get();
                         if($RespuestasPregunta!="[]"){
-                            foreach($RespuestasPregunta as $RespuestaPregunta){
-                                ////////////////Terminar para las preguntas
+                            $Tamano=sizeof($RespuestasPregunta);
+                            for ($i=0; $i < $Tamano; $i++) { 
+                                $Respuesta=Respuestas::find($RespuestasPregunta[$i]->idRespuesta);
+                                $Respuesta->descripcion=$ListaRepuestas[$i];
+                                if($i==$request->correcta){
+                                    $Respuesta->esCorrecta='1';
+                                }
+                                else{
+                                    $Respuesta->esCorrecta='0';
+                                }
+                                $PreguntasReto->save();
+                                $Respuesta->save();
                             }
+                            return response()->json(['Success' => 'Modificaciones en pregunta realizadas correctamente'],200);
                         }
                         else{
                             return response()->json(['Error' => 'consulta de respuestas'],418);
@@ -492,12 +494,44 @@ class RetoController extends Controller
     {
         $Validator = Validator::make($request->all(), [
             'idPregunta' => 'required',
-            // 'idRegistro'=>'required',
-            // 'descripcion'=>'required'
+            'idRespuesta'=>'required',
         ]);
         if ($Validator->fails()) {
             return response()->json(['Error' => $Validator->errors()], 418);
         }
+        $Pregunta=Preguntas::find($request->idPregunta);
+        if($Pregunta){
+            $RespuestasPregunta=RespuestasPregunta::where('idPregunta',$Pregunta->id)
+                ->join('Respuestas','RespuestasPregunta.idRespuesta','Respuestas.id')
+                ->select('RespuestasPregunta.*')->get();
+                if($RespuestasPregunta!="[]"){
+                    foreach($RespuestasPregunta as $RespuestaPregunta){
+                        $Respuesta=Respuestas::find($RespuestaPregunta->idRespuesta);
+                        if($Respuesta->id==$request->idRespuesta){
+                            $Respuesta->esCorrecta='1';
+                        }
+                        else{
+                            $Respuesta->esCorrecta='0';
+                        }
+                        $Respuesta->save();
+                    }
+                    $Respuestas=DB::table('RespuestasPregunta')
+                        ->where('RespuestasPregunta.idPregunta', $Pregunta->id)
+                        ->join('Respuestas','RespuestasPregunta.idRespuesta','Respuestas.id')
+                        ->select('Respuestas.*')
+                        ->get();
+                    $Pregunta->Respuestas=$Respuestas;
+                    return response()->json(['Success' => $Pregunta], 200);
+                    //return response()->json(['Success' => 'Se ha modificado correctamente la respuesta de esa pregunta'], 200);
+                }
+                else{
+                    return response()->json(['Error' => 'No se pudieron encontrar las respuestas de la pregunta'], 418);
+                }
+        }
+        else{
+            return response()->json(['Error' => 'No se ha podido encontrar la pregunta a cambiar la respuesta'], 418);
+        }
+
     }
 
     public function EliminarPregunta(Request $request)
@@ -512,23 +546,29 @@ class RetoController extends Controller
         if($Pregunta){
             $PreguntasReto=PreguntasReto::where('idPregunta',$Pregunta->id)->first();
             if($PreguntasReto){
-                
-                $Respuestas=RespuestasPregunta::where('idPregunta',$Pregunta->id)
-                ->join('Respuestas','RespuestasPregunta.idRespuesta','Respuestas.id')
-                ->select('Respuestas.*');
                 $RespuestasPregunta=RespuestasPregunta::where('idPregunta',$Pregunta->id)
-                ->join('Respuestas','RespuestasPregunta.idRespuesta','Respuestas.id')
-                ->select('RespuestasPregunta.*');
-                // $Tamano=sizeof($RespuestasPregunta);
-                // for ($i=0; $i < $Tamano; $i++) { 
-                //     //$Preguntas=Preguntas::where('id',$Pregunta->id)->get();
-                // }
-                // $RespuestasPregunta->delete();
-                // $Respuestas->delete();
-                // $PreguntasReto->delete();
-                // $Pregunta->delete();
+                ->select('RespuestasPregunta.*')->get();
+                foreach ($RespuestasPregunta as $key=>$RespuestaPregunta) {
+                    $RespPregunta=RespuestasPregunta::find($RespuestaPregunta->id);
+                    if($RespPregunta){
+                        $Respuesta=Respuestas::find($RespuestaPregunta->idRespuesta);
+                        if($Respuesta){
+                            $RespPregunta->delete();
+                            $Respuesta->delete();
+                        }
+                    }
+                    
+                }
+                $PreguntasReto->delete();
+                $Pregunta->delete();
                 return response()->json(['Success' => 'Se ha eliminado la pregunta y sus respuestas correctamente'], 200);
             }
+            else{
+                return response()->json(['Error' => 'No se pudo relacionar la pregunta y el reto'], 418);
+            }
+        }
+        else{
+            return response()->json(['Error' => 'No se pudo encontrar la pregunta a eliminar'], 418);
         }
     }
     ////Ruta para ver cuantas preguntas tiene un reto

@@ -46,3 +46,7 @@ Route::post('/listarPreguntas',[RetoController::class, 'ListarPreguntas']);
 Route::post('/listarRetosEstd',[RetoController::class, 'ListarRetosEstudiantes']);
 //Elimina un pregunta y sus respectivas respuestas
 Route::post('/eliminPreg',[RetoController::class, 'EliminarPregunta']);
+//Modica una pregunta y sus respuestas
+Route::post('/modPregResp',[RetoController::class, 'ModificarPregunta']);
+//Modifica la respuesta correcta de una pregunta 
+Route::post('/modRespCorrecta',[RetoController::class, 'CambiarRepuestaPregunta']);
