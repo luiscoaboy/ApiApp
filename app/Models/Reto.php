@@ -18,15 +18,16 @@ class Reto extends Model
         'idTipoReto',
         'tema',
         'descripcion',
-        'puntos',
         'feedback',
-        'tiempoSegundos',
+        'tiempoMinutos',
         'distribucion',
         'eliminado',
         'estado',
         'fecha_fin',
         'fecha_creacion',
-        'fecha_actualizacion'
+        'fecha_actualizacion',
+        'numeroIntentos',
+        'numeroPreguntas'
     ];
     const CREATED_AT = 'fecha_creacion';
     const UPDATED_AT = 'fecha_actualizacion';

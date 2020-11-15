@@ -50,3 +50,7 @@ Route::post('/eliminPreg',[RetoController::class, 'EliminarPregunta']);
 Route::post('/modPregResp',[RetoController::class, 'ModificarPregunta']);
 //Modifica la respuesta correcta de una pregunta 
 Route::post('/modRespCorrecta',[RetoController::class, 'CambiarRepuestaPregunta']);
+//Guarda las respuesta elegidas de un estudiante
+Route::post('/guardRespEstud',[RetoController::class, 'GuardarRespuestaDeEstudiante']);
+//Guarda las respuesta de una lista de estudiantes
+Route::post('/guardRespEstudts',[RetoController::class, 'GuardarRespuestasDeEstudiantes']);
