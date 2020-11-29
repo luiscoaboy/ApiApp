@@ -134,8 +134,9 @@ class RetoController extends Controller
     public function ListarRetos(Request $request)
     {
         $Validator = Validator::make($request->all(), [
-            'idRegistro' => 'required',
-            'distribucion'=>'required'
+            'idRegistro'    =>'required',
+            'distribucion'  =>'required',
+            'idTipoReto'    =>'required',
         ]);
         if ($Validator->fails()) {
             return response()->json(['Error' => $Validator->errors()], 418);
@@ -144,6 +145,11 @@ class RetoController extends Controller
         if (!$Registro) {
             return response()->json(['Error' => 'No se pudo encontrar registro'], 418);
         }
+
+        $TipoReto=TipoJuego::find($request->idTipoReto);
+        if (!$TipoReto) {
+            return response()->json(['Error' => 'No se pudo encontrar el tipo de reto'], 418);
+        }
         $TipoReto=DB::connection('appJuegos')->table('TipoRegistro')
         ->where('TipoRegistro.IdTipoRegistro', $Registro->idTipo)
         ->select('*')
@@ -151,6 +157,7 @@ class RetoController extends Controller
         if($TipoReto->idTipoRegistro==1){
         $Retos=DB::connection('appJuegos')->table('Reto')
                     ->where('Reto.distribucion', $request->distribucion)
+                    ->where('Reto.idTipoReto', $request->idTipoReto)
                     //->where('Reto.estado','0')
                     ->join('Registro','Reto.idCreador','Registro.idRegistro')
                     ->select('Reto.*',
@@ -159,16 +166,8 @@ class RetoController extends Controller
                 //return response()->json(['Success' => $this->ObtenerEstReto($Retos)], 200);
                 $Retos=$this->ObtenerEstReto($Retos);
         }
-        else if($TipoReto->idTipoRegistro==2){
-            $Retos=DB::connection('appJuegos')->table('Reto')
-                    ->where('Reto.distribucion', $request->distribucion)
-                    //->where('Reto.estado','0')
-                    ->join('RegistroReto','Reto.id','RegistroReto.idReto')
-                    ->join('Registro','RegistroReto.idRegistro','Registro.idRegistro')
-                    ->select('Reto.*',
-                    //'Reto.id as Estudiantes'
-                )->get();
-                $Retos=$this->ObtenerEstReto($Retos);
+        else {
+            return response()->json(['Error' => 'Tipo de usuario no puede cargar los retos'], 418);
         }
         return response()->json(['Success' => $Retos], 200);
     }
@@ -767,8 +766,17 @@ class RetoController extends Controller
     }
 
 
-    public static function CalcularPuntaje(Type $var = null)
+    public function ListarRetoAhorcadoDocente(Request $request)
     {
-        # code...
+        $Validator = Validator::make($request->all(), [
+            'idRegistro' => 'required',
+            'distribucion'=>'required'
+        ]);
+        if ($Validator->fails()) {
+            return response()->json(['Error' => $Validator->errors()], 418);
+        }
+        
     }
+
+    
 }
