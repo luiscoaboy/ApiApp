@@ -59,3 +59,14 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+IMPORTANTE!!!!
+Para que el servidor de la api funcione con xampp se debe en el archivo php.ini del servidor php colocar las siguientes lineas
+extension=php_pdo_sqlsrv_73_ts_x64
+extension=php_sqlsrv_73_ts_x64
+
+adicional se debe descargar los archivos dll php_pdo_sqlsrv_73_ts_x64 y php_sqlsrv_73_ts_x64
+en la ruta C:\xampp\php\ext
+Ademas es necesario esto instalar https://www.microsoft.com/en-us/download/details.aspx?id=36434 sino tienes instalado SQl server
+
+En el achivo database.php se configura el usuario, contrasena y base de datos de la api
